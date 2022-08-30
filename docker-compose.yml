@@ -1,0 +1,92 @@
+version: '3.4'
+
+networks:
+  backend:
+
+services:
+  customerdb:
+    container_name: customer-db
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=password@12345#
+    networks:
+      - backend
+    ports:
+      - 18001:1433
+
+  customerwebapi:
+    container_name: customer-api
+    image: ${DOCKER_REGISTRY-}customerwebapi
+    build:
+      context: .
+      dockerfile: CustomerWebApi/Dockerfile
+    networks:
+      - backend
+    environment:
+      - DB_HOST=customerdb
+      - DB_NAME=dms_customer
+      - DB_SA_PASSWORD=password@12345#
+
+  productdb:
+    container_name: product-db
+    image: mysql:8.0.29-oracle
+    environment:
+     - MYSQL_ROOT_PASSWORD=password@12345#
+    ports:
+     - 18003:3306
+    networks:
+     - backend
+
+  productwebapi:
+    container_name: product-api
+    image: ${DOCKER_REGISTRY-}productwebapi
+    build:
+      context: .
+      dockerfile: ProductWebApi/Dockerfile
+    networks:
+      - backend
+    environment:
+      - DB_HOST=productdb
+      - DB_NAME=dms_product
+      - DB_ROOT_PASSWORD=password@12345#
+  
+  orderdb:
+    container_name: order-db
+    image: mongo
+    ports:
+      - 18005:27017
+    networks:
+      - backend
+
+  orderwebapi:
+    container_name: order-api
+    image: ${DOCKER_REGISTRY-}orderwebapi
+    build:
+      context: .
+      dockerfile: OrderWebApi/Dockerfile
+    networks:
+      - backend
+    environment:
+      - DB_HOST=orderdb
+      - DB_NAME=dms_order
+
+  apigateway:
+    container_name: api-gateway
+    image: ${DOCKER_REGISTRY-}apigateway
+    build:
+      context: .
+      dockerfile: ApiGateway/Dockerfile
+    ports:
+      - 8001:80
+    networks:
+      - backend
+
+  authenticationwebapi:
+    container_name: authentication-api
+    image: ${DOCKER_REGISTRY-}authenticationwebapi
+    build:
+      context: .
+      dockerfile: AuthenticationWebApi/Dockerfile
+    networks:
+      - backend
